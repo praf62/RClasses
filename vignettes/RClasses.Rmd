@@ -1,0 +1,183 @@
+---
+#  <!-- use_vignette("RClasses")#To create the vignette -->
+title: "RClasses: Um pacote para introdução à Estatística Descritiva no R/RStudio"
+author: "Paulo Renato A Firmino"
+date: "`r format(Sys.time(), '%d/%m/%Y')`"
+#bibliography: R-packages.bib
+output:
+    #learnr::tutorial: default
+    html_document:
+       highlight: textmate
+       theme: flatly
+       number_sections: yes
+       toc: yes
+       toc_float:
+         collapsed: yes
+         smooth_scroll: yes
+# runtime: shiny_prerendered # for learnr
+vignette: >
+  %\VignetteIndexEntry{RClasses}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+# library(RClasses)
+# remove.packages("learnr")
+# remove.packages("htmltools")
+# remove.packages("shiny")
+# library("learnr")
+# library("htmltools")
+# library("shiny")
+```
+# Summário
+Trazemos aqui algumas chamadas de funções correspondentes à Estatística Descritiva.  Antes, construa um projeto, já pensando em pacote, e crie seu primeiro script.
+
+# Introdução
+Carregue as funções da pasta R e o pacote `qcc`. Este último para gráficos de Pareto.
+```{r setup}
+# library(RClasses)
+# source("../R/classicBoxPlot.R")
+# source("../R/distribFreq.R")
+# source("../R/mode_function.R")
+# source("../R/iqv_function.R")
+# install.packages("qcc")
+```
+
+# Acesso aos dados
+Recorra ao método `read.csv`:
+```{r}
+#O CAMINHO EM QUE ESTÁ O CONJUNTO DE DADOS:
+#(OBSERVE QUE AS BARRAS NÃO SÃO INVERTIDAS, COMO NO WINDOWS)
+dataPath = "./data/"
+#A LEITURA DO CONJUNTO DE DADOS
+dados =   read.csv(file = paste(dataPath, "BD01.csv", sep="")
+                          , header = TRUE, sep = ";"); 
+#A VISUALIZAÇÃO DO CONJUNTO DE DADOS
+# View(dados)
+# install.packages("kableExtra"); 
+library(kableExtra)
+# install.packages("dplyr")    # alternative installation of the %>%
+library(dplyr)    # alternatively, this also loads %>%
+kable(head(dados, 10)) %>%
+  kable_styling(full_width = F, bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+```
+Convertendo variável qualitativa nominal em ordinal:
+```{r}
+#Construindo nova variável, que respeite a ordenação do nível de estresse
+dados$Degradacao = factor(dados$Degradacao, order = TRUE,
+                                    levels = c("Baixo", "Medio", "Alto"))
+
+```
+# Distribuições de Frequências {.tabset}
+## Distribuição Univariada
+Recorra ao método `distFreq` 
+```{r}
+dfAbsFornecedor = distFreq(x = dados$Fornecedor, varName = "Fornecedor")
+print(dfAbsFornecedor$distFreq)
+
+dfAbsDegradacao = distFreq(x = dados$Degradacao, varName = "Degradação")
+print(dfAbsDegradacao$distFreq)
+
+dfAbsNFalhas = distFreq(x = dados$nReincidenciaFalhas, varName = "Nº de falhas")
+table(nFalhas=dfAbsNFalhas$qualitativeData, dados$Fornecedor)
+```
+## Distribuição Bivariada
+Recorra aos métodos `table` e `prop.table`. Recorra também ao método `distFreq`, em caso de quantitativa.
+```{r}
+dfFornDeg = table(Fornecedor = dados$Fornecedor, Degradacao = dados$Degradacao)
+prop.table(dfFornDeg, margin = 1)
+# print(dfFornDeg)
+
+```
+
+# Figuras {.tabset}
+## Qualitativas 
+Recorra às funções `barplot` para nominais ou ordinais e `pareto.chart` para as nominais, essa última do pacote `qcc`:
+```{r}
+barplot(dfAbsDegradacao$distFreq, xlab = "Degradação", ylab = "Frequência")
+#CARREGUE E USE O PACOTE qcc
+library("qcc")
+pareto.chart(dfAbsDegradacao$distFreq, xlab = "Degradação", ylab = "Frequência", ylab2 = "Frequência Acumulada Relativa")
+```
+
+## Quantitativas Discretas
+
+Recorra à função `plot`:
+```{r}
+plot(table(dados$nReincidenciaFalhas), xlab = "Nº de reinicidências", ylab = "Frequência")
+```
+
+## Quantitativas Contínuas
+Recorra à função `hist`, para uma solução otimizada e, se desejar resultado similar ao básico das nossas aulas, `distFreq`:
+```{r}
+hist(dados$TempoFalha, xlab = "Tempo entre falhas", ylab = "Frequência", main = "Otimizado pelo R")
+dfTempoEntreFalhas = distFreq( x = dados$TempoFalha, varName = "Tempo entre falhas")
+#PARA RESULTADO SIMILAR AO BÁSICO, DAS AULAS
+hist(x = dados$TempoFalha, breaks =  dfTempoEntreFalhas$grid, main = "Como visto em sala")
+```
+
+Recorra ainda à função `boxplot`, para resultado otimizado, ou `classicBoxPlot`, para resultado similar ao dado em sala de aula:
+```{r}
+boxplot(x = dados$TempoFalha, ylab = "Tempo entre falhas", main = "Otimizado pelo R")
+#PARA RESULADO SIMILAR AOS DAS AULAS:
+classicBoxPlot(x = dados$TempoFalha, ylab = "Tempo entre falhas")
+#PARA ASSOCIAÇÃO ENTRE UMA QUANTITATIVA E UMA QUALITATIVA:
+boxplot(dados$TempoFalha~dados$Fornecedor, ylab = "Tempo entre falhas"
+        , xlab = "Fornecedor")
+
+```
+
+# Medidas de Posição {.tabset}
+## Moda
+Recorra a `ourMode`, para o cômputo similar ao da moda de Czuber, visto em aula, para variáveis quantitativas:
+```{r}
+ourMode(sample = dados$Degradacao, xlab = "Nível de Degradação")
+ourMode(sample = dados$TempoFalha, xlab = "Tempo entre falhas")
+```
+## Mediana
+Recorra a `median`, para quantitativas:
+```{r}
+median(x =  dados$TempoFalha, na.rm = TRUE)
+```
+
+## Média
+Recorra a `mean`, para quantitativas:
+```{r}
+mean(x =  dados$TempoFalha, na.rm = TRUE)
+```
+
+# Medidas de dispersão {.tabset}
+## IQV
+Recorra a `iqv`:
+```{r}
+dfDegr = distFreq(x = dados$Degradacao, varName = "Degradação")
+iqv(freq = dfDegr$distFreq, varName = "Degradação")
+```
+
+## Amplitude/Amplitude Interquartílica
+Recorra às funções `max`, `min` e `quantile`:
+```{r}
+Amplitude = max(dados$TempoFalha, na.rm=TRUE) - min(dados$TempoFalha, na.rm=TRUE)
+q = quantile(x = dados$TempoFalha, probs = c(.25, .75), na.rm = TRUE)
+AIQ = as.numeric(q[2] - q[1])
+print(AIQ)
+```
+## Variância/Desvio-padrão/Coeficiente de Variação
+Recorra às funções `var`, `sd` e `mean`:
+```{r}
+variancia = var(dados$TempoFalha, na.rm=TRUE)
+dp = sd(dados$TempoFalha, na.rm=TRUE)
+media = mean(x =  dados$TempoFalha, na.rm = TRUE)
+cv = dp/media
+print(variancia)
+print(dp)
+print(cv)
+```
+
